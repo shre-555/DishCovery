@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dishcovery — Cook Smarter</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:   #F5F0E8;
+    --paper:   #FDFAF4;
+    --ink:     #1A1208;
+    --ink-mid: #4A3F2F;
+    --ink-lt:  #8C7B65;
+    --saffron: #E07B39;
+    --saffron-lt: #F2A96A;
+    --sage:    #5C7A5E;
+    --sage-lt: #A8C5AA;
+    --alert:   #C0392B;
+    --border:  #D9CFC0;
+    --shadow:  0 2px 20px rgba(26,18,8,.08);
+    --radius:  12px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Header ───────────────────────────────────────────────── */
+  header {
+    position: relative;
+    padding: 48px 40px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+    display: flex; align-items: flex-end; gap: 16px;
+  }
+
+  .logo-mark {
+    width: 52px; height: 52px;
+    background: var(--saffron);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(224,123,57,.35);
+  }
+
+  .logo-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    line-height: 1;
+  }
+
+  .logo-text p {
+    font-size: .8rem;
+    color: var(--ink-lt);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── Layout ───────────────────────────────────────────────── */
+  .app {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: calc(100vh - 121px);
+    position: relative; z-index: 1;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────── */
+  .sidebar {
+    background: var(--paper);
+    border-right: 1px solid var(--border);
+    padding: 32px 28px;
+    display: flex; flex-direction: column; gap: 28px;
+    overflow-y: auto;
+    max-height: calc(100vh - 121px);
+    position: sticky; top: 0;
+  }
+
+  .section-label {
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-lt);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  /* ── Text inputs ──────────────────────────────────────────── */
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+    resize: none;
+    outline: none;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(224,123,57,.12);
+  }
+
+  textarea { min-height: 80px; }
+
+  /* ── Tag input ────────────────────────────────────────────── */
+  .tag-input-wrap {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--cream);
+    padding: 8px 10px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    cursor: text;
+    transition: border-color .2s, box-shadow .2s;
+    min-height: 48px;
+  }
+
+  .tag-input-wrap:focus-within {
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(224,123,57,.12);
+  }
+
+  .tag-input-wrap input {
+    border: none; background: transparent;
+    padding: 2px 4px; font-size: .85rem;
+    flex: 1; min-width: 80px;
+    outline: none; color: var(--ink);
+  }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--saffron);
+    color: white;
+    border-radius: 20px;
+    padding: 3px 10px 3px 10px;
+    font-size: .78rem;
+    font-weight: 500;
+    animation: tagPop .18s ease-out;
+  }
+
+  .tag.diet { background: var(--sage); }
+
+  .tag button {
+    background: none; border: none; color: inherit;
+    cursor: pointer; padding: 0; line-height: 1;
+    font-size: .9rem; opacity: .75;
+  }
+
+  .tag button:hover { opacity: 1; }
+
+  @keyframes tagPop {
+    from { transform: scale(.7); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+
+  /* ── Dietary grid ─────────────────────────────────────────── */
+  .diet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .diet-btn {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--cream);
+    padding: 7px 10px;
+    font-size: .78rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--ink-mid);
+    transition: all .18s;
+    text-align: left;
+  }
+
+  .diet-btn:hover { border-color: var(--sage-lt); background: #EDF3EE; }
+
+  .diet-btn.active {
+    border-color: var(--sage);
+    background: var(--sage);
+    color: white;
+  }
+
+  /* ── CTA button ───────────────────────────────────────────── */
+  .btn-discover {
+    width: 100%;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-style: italic;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: background .2s, transform .15s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+
+  .btn-discover:hover { background: var(--saffron); transform: translateY(-1px); }
+  .btn-discover:active { transform: translateY(0); }
+  .btn-discover:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* ── API URL bar ──────────────────────────────────────────── */
+  .api-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .api-row input {
+    flex: 1; font-size: .8rem;
+  }
+
+  /* ── Main panel ───────────────────────────────────────────── */
+  .main {
+    padding: 40px 48px;
+    overflow-y: auto;
+  }
+
+  /* ── Empty state ──────────────────────────────────────────── */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    gap: 16px;
+    animation: fadeIn .5s ease;
+  }
+
+  .empty-icon {
+    font-size: 72px;
+    opacity: .25;
+    filter: grayscale(1);
+  }
+
+  .empty-state h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--ink-mid);
+  }
+
+  .empty-state p {
+    color: var(--ink-lt);
+    font-size: .9rem;
+    max-width: 320px;
+    line-height: 1.6;
+  }
+
+  /* ── Loading state ────────────────────────────────────────── */
+  .loading {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 60vh; gap: 20px;
+  }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--saffron);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading p {
+    color: var(--ink-lt);
+    font-size: .9rem;
+    font-style: italic;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+
+  /* ── Recipe card ──────────────────────────────────────────── */
+  .recipe-card {
+    animation: slideUp .4s ease;
+    max-width: 760px;
+  }
+
+  @keyframes slideUp {
+    from { opacity:0; transform: translateY(24px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .recipe-header {
+    margin-bottom: 32px;
+  }
+
+  .recipe-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+
+  .recipe-header .desc {
+    color: var(--ink-mid);
+    line-height: 1.65;
+    font-size: .95rem;
+    margin-bottom: 16px;
+  }
+
+  .recipe-meta {
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: .8rem;
+    color: var(--ink-mid);
+  }
+
+  /* ── Section headers ──────────────────────────────────────── */
+  .recipe-section {
+    margin-bottom: 36px;
+  }
+
+  .recipe-section h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* ── Ingredients table ────────────────────────────────────── */
+  .ingredients-list {
+    display: flex; flex-direction: column; gap: 0;
+  }
+
+  .ingredient-row {
+    display: grid;
+    grid-template-columns: 32px 140px 1fr auto;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    align-items: start;
+    transition: background .15s;
+  }
+
+  .ingredient-row:hover { background: var(--paper); }
+  .ingredient-row:nth-child(even) { background: rgba(0,0,0,.018); }
+  .ingredient-row:nth-child(even):hover { background: var(--paper); }
+
+  .ing-icon { font-size: 1.1rem; line-height: 1.6; }
+
+  .ing-amount {
+    font-size: .85rem;
+    color: var(--ink-lt);
+    font-weight: 500;
+    padding-top: 2px;
+  }
+
+  .ing-name {
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .ing-sub-note {
+    font-size: .75rem;
+    color: var(--sage);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .violation-badges {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    justify-content: flex-end;
+  }
+
+  .vbadge {
+    font-size: .65rem;
+    background: #FEF0E7;
+    color: var(--saffron);
+    border: 1px solid #F5C9A6;
+    border-radius: 4px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+
+  /* ── Steps ────────────────────────────────────────────────── */
+  .steps-list {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .step-item {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 0 14px;
+    align-items: start;
+  }
+
+  .step-num {
+    width: 36px; height: 36px;
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: 'Playfair Display', serif;
+    font-size: .95rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body {}
+
+  .step-duration {
+    font-size: .72rem;
+    color: var(--saffron);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+
+  .step-instruction {
+    font-size: .92rem;
+    line-height: 1.65;
+    color: var(--ink-mid);
+  }
+
+  /* ── Tips ─────────────────────────────────────────────────── */
+  .tips-list {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .tip-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #FFFBF5;
+    border: 1px solid #EDD9B8;
+    border-left: 3px solid var(--saffron);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+  }
+
+  .tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  .tip-text {
+    font-size: .87rem;
+    line-height: 1.6;
+    color: var(--ink-mid);
+  }
+
+  /* ── Fix section ──────────────────────────────────────────── */
+  .fix-section {
+    margin-top: 40px;
+    padding: 24px;
+    background: var(--paper);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .fix-section h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .fix-section p {
+    font-size: .82rem;
+    color: var(--ink-lt);
+    margin-bottom: 14px;
+  }
+
+  .fix-row {
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  .fix-row textarea {
+    flex: 1; min-height: 60px; font-size: .85rem;
+  }
+
+  .btn-fix {
+    background: var(--saffron);
+    color: white; border: none;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: .85rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+
+  .btn-fix:hover { background: #C96B2A; }
+  .btn-fix:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ── Session pill ─────────────────────────────────────────── */
+  .session-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    margin-bottom: 24px;
+  }
+
+  /* ── Error ────────────────────────────────────────────────── */
+  .error-box {
+    background: #FDF2F2;
+    border: 1px solid #F5BCBC;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    color: var(--alert);
+    font-size: .9rem;
+    line-height: 1.6;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+
+  /* ── Divider ──────────────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── Utility ──────────────────────────────────────────────── */
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .hidden { display: none !important; }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { max-height: none; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 28px 20px; }
+    header { padding: 28px 20px 20px; }
+    .ingredient-row { grid-template-columns: 28px 1fr 1fr; }
+    .violation-badges { grid-column: 2 / -1; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🍲</div>
+  <div class="logo-text">
+    <h1>Dishcovery</h1>
+    <p>AI-Powered Recipe Intelligence</p>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <div>
+      <div class="section-label">API Endpoint</div>
+      <div class="api-row">
+        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">What would you like to cook?</div>
+      <textarea id="userQuery" placeholder="e.g. Make a healthy Indian dinner, butter chicken, quick lunch…"></textarea>
+    </div>
+
+    <div>
+      <div class="section-label">Ingredients you have</div>
+      <div class="tag-input-wrap" id="inventoryWrap">
+        <input type="text" id="inventoryInput" placeholder="Type ingredient, press Enter…">
+      </div>
+      <div style="font-size:.72rem;color:var(--ink-lt);margin-top:6px;">Press Enter or comma to add</div>
+    </div>
+
+    <div>
+      <div class="section-label">Dietary Restrictions</div>
+      <div class="diet-grid" id="dietGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <button class="btn-discover" id="discoverBtn" onclick="discover()">
+      <span>✦</span> Discover Recipe
+    </button>
+
+  </aside>
+
+  <!-- ── Main panel ──────────────────────────────────────────── -->
+  <main class="main" id="main">
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🍛</div>
+      <h2>Your recipe will appear here</h2>
+      <p>Fill in your ingredients and dietary needs on the left, then let Dishcovery craft the perfect dish for you.</p>
+    </div>
+
+    <div class="loading hidden" id="loadingState">
+      <div class="spinner"></div>
+      <p id="loadingMsg">Crafting your recipe…</p>
+    </div>
+
+    <div class="recipe-card hidden" id="recipeCard">
+      <!-- populated by JS -->
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+const state = {
+  inventory: [],
+  dietary: new Set(),
+  sessionId: null,
+  recipe: null,
+};
+
+const DIETARY_OPTIONS = [
+  { key: 'vegan',          label: '🌱 Vegan' },
+  { key: 'vegetarian',     label: '🥦 Vegetarian' },
+  { key: 'gluten_free',    label: '🌾 Gluten-Free' },
+  { key: 'dairy_free',     label: '🥛 Dairy-Free' },
+  { key: 'keto',           label: '🥑 Keto' },
+  { key: 'nut_free',       label: '🥜 Nut-Free' },
+  { key: 'egg_free',       label: '🥚 Egg-Free' },
+  { key: 'soy_free',       label: '🫘 Soy-Free' },
+  { key: 'halal',          label: '☪️ Halal' },
+  { key: 'kosher',         label: '✡️ Kosher' },
+  { key: 'jain',           label: '🕊️ Jain' },
+  { key: 'no_onion_garlic',label: '🧅 No Onion/Garlic' },
+  { key: 'paleo',          label: '🦴 Paleo' },
+  { key: 'low_carb',       label: '📉 Low Carb' },
+];
+
+// ── Build dietary grid ────────────────────────────────────────
+function buildDietGrid() {
+  const grid = document.getElementById('dietGrid');
+  DIETARY_OPTIONS.forEach(({ key, label }) => {
+    const btn = document.createElement('button');
+    btn.className = 'diet-btn';
+    btn.textContent = label;
+    btn.dataset.key = key;
+    btn.onclick = () => toggleDiet(key, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function toggleDiet(key, btn) {
+  if (state.dietary.has(key)) {
+    state.dietary.delete(key);
+    btn.classList.remove('active');
+  } else {
+    state.dietary.add(key);
+    btn.classList.add('active');
+  }
+}
+
+// ── Tag (ingredient) input ─────────────────────────────────────
+document.getElementById('inventoryInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (val) addIngredient(val);
+    e.target.value = '';
+  }
+  if (e.key === 'Backspace' && !e.target.value && state.inventory.length) {
+    removeIngredient(state.inventory[state.inventory.length - 1]);
+  }
+});
+
+document.getElementById('inventoryWrap').addEventListener('click', () => {
+  document.getElementById('inventoryInput').focus();
+});
+
+function addIngredient(name) {
+  if (state.inventory.includes(name)) return;
+  state.inventory.push(name);
+  renderInventoryTags();
+}
+
+function removeIngredient(name) {
+  state.inventory = state.inventory.filter(i => i !== name);
+  renderInventoryTags();
+}
+
+function renderInventoryTags() {
+  const wrap = document.getElementById('inventoryWrap');
+  const input = document.getElementById('inventoryInput');
+  wrap.querySelectorAll('.tag').forEach(t => t.remove());
+  state.inventory.forEach(name => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.innerHTML = `${esc(name)} <button onclick="removeIngredient('${esc(name)}')" title="Remove">×</button>`;
+    wrap.insertBefore(tag, input);
+  });
+}
+
+// ── API call — Discover ────────────────────────────────────────
+async function discover() {
+  const query = document.getElementById('userQuery').value.trim();
+  const apiUrl = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+
+  showLoading('Generating your recipe…');
+
+  const payload = {
+    user_query: query,
+    inventory: state.inventory,
+    dietary_restrictions: [...state.dietary],
+    allergies: [],
+  };
+
+  try {
+    const res = await fetch(`${apiUrl}/discover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.success && data.recipe) {
+      state.sessionId = data.session_id;
+      state.recipe = data.recipe;
+      renderRecipe(data.recipe, data.session_id);
+    } else {
+      showError(data.error || 'No recipe returned. Try again.');
+    }
+  } catch (err) {
+    showError(`Could not reach the API at <strong>${apiUrl}</strong>.<br>
+      Make sure Dishcovery is running and the URL is correct.<br><small>${err.message}</small>`);
+  }
+}
+
+// ── API call — Fix ─────────────────────────────────────────────
+async function applyFix() {
+  const desc = document.getElementById('fixDesc').value.trim();
+  const step = parseInt(document.getElementById('fixStep').value) || 0;
+  const apiUrl = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+
+  if (!desc) return;
+  if (!state.sessionId) { alert('No active session. Generate a recipe first.'); return; }
+
+  const btn = document.getElementById('fixBtn');
+  btn.disabled = true;
+  btn.textContent = 'Fixing…';
+
+  try {
+    const res = await fetch(`${apiUrl}/fix`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: state.sessionId,
+        fix_description: desc,
+        current_step: step,
+      }),
+    });
+    const data = await res.json();
+    if (data.success && data.recipe) {
+      state.recipe = data.recipe;
+      renderRecipe(data.recipe, state.sessionId, true);
+      document.getElementById('fixDesc').value = '';
+    } else {
+      alert('Fix failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('API error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔧 Apply Fix';
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function renderRecipe(recipe, sessionId, isFixed = false) {
+  const card = document.getElementById('recipeCard');
+
+  const violations = recipe.ingredients
+    ? recipe.ingredients.filter(i => (i.violates || []).length > 0)
+    : [];
+
+  card.innerHTML = `
+    <div class="session-pill">
+      <span>◆</span> ${esc(sessionId)}
+      ${isFixed ? '<span style="color:var(--saffron-lt);">— Fixed</span>' : ''}
+    </div>
+
+    <div class="recipe-header">
+      <h2>${esc(recipe.title || 'Untitled Recipe')}</h2>
+      <p class="desc">${esc(recipe.description || '')}</p>
+      <div class="recipe-meta">
+        <span class="meta-chip">🍽️ Serves ${esc(String(recipe.servings || '?'))}</span>
+        <span class="meta-chip">⏱ Prep ${esc(recipe.prep_time || '—')}</span>
+        <span class="meta-chip">🔥 Cook ${esc(recipe.cook_time || '—')}</span>
+        ${violations.length ? `<span class="meta-chip" style="color:var(--saffron);border-color:#F5C9A6;">⚠️ ${violations.length} substituted</span>` : ''}
+      </div>
+    </div>
+
+    ${renderIngredients(recipe.ingredients || [])}
+    ${renderSteps(recipe.steps || [])}
+    ${renderTips(recipe.tips || [])}
+
+    <hr>
+
+    <div class="fix-section">
+      <h3>🔧 Something went wrong while cooking?</h3>
+      <p>Describe the mistake and Dishcovery will create a recovery plan.</p>
+      <div class="fix-row">
+        <textarea id="fixDesc" placeholder="e.g. I accidentally added too much salt at step 3…"></textarea>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input type="number" id="fixStep" min="0" value="0"
+            style="width:80px;padding:8px;font-size:.82rem;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);outline:none;color:var(--ink);"
+            placeholder="Step">
+          <button class="btn-fix" id="fixBtn" onclick="applyFix()">🔧 Apply Fix</button>
+        </div>
+      </div>
+      <div style="font-size:.7rem;color:var(--ink-lt);margin-top:6px;">Step index (0 = step 1)</div>
+    </div>
+  `;
+
+  hideAll();
+  card.classList.remove('hidden');
+}
+
+function renderIngredients(ingredients) {
+  if (!ingredients.length) return '';
+  const rows = ingredients.map(ing => {
+    const violates = ing.violates || [];
+    const isSubbed = (ing.notes || '').includes('Substituted');
+    const icon = violates.length ? '⚠️' : '✅';
+    const badges = violates.map(v =>
+      `<span class="vbadge">${esc(v.replace(/_/g,' '))}</span>`
+    ).join('');
+    return `
+      <div class="ingredient-row">
+        <span class="ing-icon">${icon}</span>
+        <span class="ing-amount">${esc(ing.amount || '')}</span>
+        <div>
+          <div class="ing-name">${esc(ing.name || '')}</div>
+          ${isSubbed ? `<div class="ing-sub-note">← ${esc(ing.notes)}</div>` : ''}
+        </div>
+        <div class="violation-badges">${badges}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="recipe-section">
+      <h3>🧺 Ingredients</h3>
+      <div class="ingredients-list">${rows}</div>
+    </div>`;
+}
+
+function renderSteps(steps) {
+  if (!steps.length) return '';
+  const items = steps.map(s => `
+    <div class="step-item">
+      <div class="step-num">${s.step_number || '?'}</div>
+      <div class="step-body">
+        ${s.duration ? `<div class="step-duration">${esc(s.duration)}</div>` : ''}
+        <div class="step-instruction">${esc(s.instruction || '')}</div>
+      </div>
+    </div>`).join('');
+
+  return `
+    <div class="recipe-section">
+      <h3>👨‍🍳 Method</h3>
+      <div class="steps-list">${items}</div>
+    </div>`;
+}
+
+function renderTips(tips) {
+  if (!tips.length) return '';
+  const items = tips.map(t => `
+    <div class="tip-item">
+      <span class="tip-icon">💡</span>
+      <span class="tip-text">${esc(t)}</span>
+    </div>`).join('');
+
+  return `
+    <div class="recipe-section">
+      <h3>✨ Tips</h3>
+      <div class="tips-list">${items}</div>
+    </div>`;
+}
+
+// ── UI helpers ─────────────────────────────────────────────────
+function showLoading(msg = 'Working…') {
+  hideAll();
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingState').classList.remove('hidden');
+  document.getElementById('discoverBtn').disabled = true;
+}
+
+function showError(html) {
+  const card = document.getElementById('recipeCard');
+  card.innerHTML = `
+    <div class="error-box">
+      <span style="font-size:1.4rem">⚠️</span>
+      <div>${html}</div>
+    </div>`;
+  hideAll();
+  card.classList.remove('hidden');
+  document.getElementById('discoverBtn').disabled = false;
+}
+
+function hideAll() {
+  ['emptyState','loadingState','recipeCard'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
+  document.getElementById('discoverBtn').disabled = false;
+}
+
+// XSS-safe text escaping
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Allow Enter in query to submit ────────────────────────────
+document.getElementById('userQuery').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) discover();
+});
+
+// ── Init ───────────────────────────────────────────────────────
+buildDietGrid();
+</script>
+</body>
+</html>
