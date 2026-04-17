@@ -693,7 +693,7 @@ class DishcoveryAgents:
         gemini_api_key:      str,
         groq_api_key:        str,
         spoonacular_api_key: str,
-        chromadb_path:       str = "./chroma.sqlite3",
+        chromadb_path:       str = r"C:\Sem 6\GenAI\DishCovery\Project\chroma_db",
     ):
         self.gemini_client       = genai.Client(api_key=gemini_api_key)
         self.groq_client         = Groq(api_key=groq_api_key)
@@ -1889,7 +1889,7 @@ async def lifespan(app: FastAPI):
     gemini_key      = os.getenv("GEMINI_API_KEY")
     groq_key        = os.getenv("GROQ_API_KEY")
     spoonacular_key = os.getenv("SPOONACULAR_API_KEY")
-    chromadb_path   = os.getenv("CHROMADB_PATH", r"C:\Sem 6\GenAI\DishCovery\Project\chroma.sqlite3")
+    chromadb_path   = os.getenv("CHROMADB_PATH", r"C:\Sem 6\GenAI\DishCovery\Project\chroma_db")
     
     # ChromaDB expects a directory; if .sqlite3 is in path, remove it
     if chromadb_path.endswith(".sqlite3"):
